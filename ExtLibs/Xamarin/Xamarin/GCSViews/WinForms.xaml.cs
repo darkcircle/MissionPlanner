@@ -8,8 +8,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MissionPlanner;
 using MissionPlanner.Controls;
 using MissionPlanner.GCSViews.ConfigurationView;
+using MissionPlanner.Utilities;
 using Newtonsoft.Json;
 using OpenTK.Graphics.ES20;
 using SkiaSharp;
@@ -18,6 +20,7 @@ using Xamarin.Controls;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using Application = System.Windows.Forms.Application;
+using Device = Xamarin.Forms.Device;
 using Extensions = MissionPlanner.Utilities.Extensions;
 using Form = System.Windows.Forms.Form;
 using Label = System.Windows.Forms.Label;
@@ -201,6 +204,12 @@ namespace Xamarin.GCSViews
                 Monitor.Enter(XplatUIMine.paintlock);
                 if (XplatUIMine.PaintPending)
                 {
+                    scale = new Forms.Size( (SkCanvasView.CanvasSize.Width / size.Width),
+                        (SkCanvasView.CanvasSize.Height / size.Height));
+
+                    XplatUIMine.GetInstance()._virtualScreen = new Rectangle(0, 0, (int) size.Width, (int) size.Height);
+                    XplatUIMine.GetInstance()._workingArea = new Rectangle(0, 0, (int) size.Width, (int) size.Height);
+
                     this.SkCanvasView.InvalidateSurface();
                     XplatUIMine.PaintPending = false;
                 }
@@ -215,6 +224,11 @@ namespace Xamarin.GCSViews
             Console.WriteLine(e.ExceptionObject);
         }
 
+        float Magnitude(SKPoint point)
+        {
+            return (float)Math.Sqrt(Math.Pow(point.X, 2) + Math.Pow(point.Y, 2));
+        }
+
         //Double-clicking the left mouse button actually generates a sequence of four messages: WM_LBUTTONDOWN, WM_LBUTTONUP, WM_LBUTTONDBLCLK, and WM_LBUTTONUP.
         DateTime LastPressed = DateTime.MinValue;
 
@@ -222,7 +236,7 @@ namespace Xamarin.GCSViews
         private int LastPressedY;
         private Forms.Size size;
         private Forms.Size scale;
-        private (DateTime time, int x, int y) DownTime = (DateTime.MinValue, 0, 0);
+        private Dictionary<long, TouchInfo> touchDictionary = new Dictionary<long, TouchInfo>(10);
         private bool start;
 
         private void SkCanvasView_Touch(object sender, SkiaSharp.Views.Forms.SKTouchEventArgs e)
@@ -237,6 +251,67 @@ namespace Xamarin.GCSViews
 
                 if (e.ActionType == SKTouchAction.Moved)
                 {
+                    if (touchDictionary.ContainsKey(e.Id))
+                    {
+                        touchDictionary[e.Id].hasmoved = true;
+                        touchDictionary[e.Id].prev = touchDictionary[e.Id].now;
+                        touchDictionary[e.Id].now = e;
+                    }
+
+                    if (touchDictionary.Count >= 2)
+                    {
+                        // Copy two dictionary keys into array
+                        long[] keys = new long[touchDictionary.Count];
+                        touchDictionary.Keys.CopyTo(keys, 0);
+
+                        // Find index non-moving (pivot) finger
+                        int pivotIndex = (keys[0] == e.Id) ? 1 : 0;
+
+                        // Get the three points in the transform
+                        SKPoint pivotPoint = touchDictionary[keys[pivotIndex]].atdown.Location;
+                        SKPoint prevPoint = touchDictionary[e.Id].atdown.Location;
+                        SKPoint newPoint = e.Location;
+
+                        // Calculate two vectors
+                        SKPoint oldVector = prevPoint - pivotPoint;
+                        SKPoint newVector = newPoint - pivotPoint;
+
+                        SKPoint center = (pivotPoint + prevPoint);
+                        center.X /= 2;
+                        center.Y /= 2;
+
+                        // Find angles from pivot point to touch points
+                        float oldAngle = (float)Math.Atan2(oldVector.Y, oldVector.X);
+                        float newAngle = (float)Math.Atan2(newVector.Y, newVector.X);
+                        
+                        float scale1 = Magnitude(newVector) / Magnitude(oldVector);
+
+                        if (!float.IsNaN(scale1) && !float.IsInfinity(scale1))
+                        {
+                            //var centre = pivotPoint;
+                            x = (int) (center.X / scale.Width);
+                            y = (int) (center.Y / scale.Height);
+
+                            Console.WriteLine("scale: {0} {1} {2}", scale, newVector.Length, oldVector.Length);
+                            if (scale1 >= 2)
+                            {
+                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEWHEEL, new IntPtr((int) (1) << 16),
+                                    (IntPtr) ((y) << 16 | (x)));
+                                touchDictionary[e.Id].atdown = e;
+                            }
+
+                            if (scale1 <= 0.5)
+                            {
+                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEWHEEL, new IntPtr((int) (-1) << 16),
+                                    (IntPtr) ((y) << 16 | (x)));
+                                touchDictionary[e.Id].atdown = e;
+                            }
+                        }
+
+                        e.Handled = true;
+                        return;
+                    }
+
                     if (e.InContact)
                     {
                         XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr((int) MsgButtons.MK_LBUTTON),
@@ -251,12 +326,28 @@ namespace Xamarin.GCSViews
 
                 if (e.ActionType == SKTouchAction.Pressed && e.MouseButton == SKMouseButton.Left)
                 {
-                    DownTime = (DateTime.Now, x, y);
-                    
+                    touchDictionary.Add(e.Id, new TouchInfo() {now = e, prev = e, DownTime = DateTime.Now, atdown = e});
+
+                    // right click handler
+                    Device.StartTimer(TimeSpan.FromMilliseconds(1000), () =>
+                    {
+                        if(touchDictionary.ContainsKey(e.Id) && touchDictionary.Count == 1)
+                            if (!touchDictionary[e.Id].hasmoved)
+                            {
+                                touchDictionary[e.Id].wasright = true;
+                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_RBUTTONDOWN,
+                                    new IntPtr((int) MsgButtons.MK_RBUTTON), (IntPtr) ((y) << 16 | (x)));
+                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_RBUTTONUP,
+                                    new IntPtr((int) MsgButtons.MK_RBUTTON), (IntPtr) ((y) << 16 | (x)));
+                                return false;
+                            }
+                        return false;
+                    });
+
                     XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr(), (IntPtr)((y) << 16 | (x)));
 
-                    if (LastPressed.AddMilliseconds(500) > DateTime.Now && Math.Abs(LastPressedX - x) < 10 &&
-                        Math.Abs(LastPressedY - y) < 10)
+                    if (LastPressed.AddMilliseconds(500) > DateTime.Now && Math.Abs(LastPressedX - x) < 20 &&
+                        Math.Abs(LastPressedY - y) < 20)
                     {
                         XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_LBUTTONDBLCLK, new IntPtr((int) MsgButtons.MK_LBUTTON),
                             (IntPtr) ((y) << 16 | (x)));
@@ -269,35 +360,47 @@ namespace Xamarin.GCSViews
 
                 if (e.ActionType == SKTouchAction.Released && e.MouseButton == SKMouseButton.Left)
                 {
-                    if ( Math.Abs(DownTime.x - x) < 10 && Math.Abs(DownTime.y - y) < 10 && DownTime.time.AddMilliseconds(2000) < DateTime.Now)
+                    if (touchDictionary.ContainsKey(e.Id) && touchDictionary[e.Id].wasright)
                     {
-                        XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_RBUTTONDOWN,
-                            new IntPtr((int) MsgButtons.MK_RBUTTON), (IntPtr) ((y) << 16 | (x)));
-                        XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_RBUTTONUP,
-                            new IntPtr((int) MsgButtons.MK_RBUTTON), (IntPtr) ((y) << 16 | (x)));
-
-                        DownTime.time = DateTime.MinValue;
-                        return;
+                        // no action here
+                    }
+                    else
+                    {
+                        XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_LBUTTONUP,
+                            new IntPtr((int) MsgButtons.MK_LBUTTON), (IntPtr) ((y) << 16 | (x)));
                     }
 
-                    DownTime.time = DateTime.MinValue;
-                    //XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr((int) MsgButtons.MK_LBUTTON), (IntPtr)((y) << 16 | (x)));
-
-                    XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_LBUTTONUP, new IntPtr((int) MsgButtons.MK_LBUTTON), (IntPtr) ((y) << 16 | (x)));
                     LastPressed = DateTime.Now;
                     LastPressedX = x;
                     LastPressedY = y;
+                    touchDictionary.Remove(e.Id);
                 }
 
                 if (e.ActionType == SKTouchAction.Entered)
+                {
                     XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr(), (IntPtr) ((y) << 16 | (x)));
+                    touchDictionary.Clear();
+                }
+
+                if (e.ActionType == SKTouchAction.Cancelled)
+                {
+                    touchDictionary.Clear();
+                }
 
                 if (e.ActionType == SKTouchAction.Exited)
+                {
                     XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr(), (IntPtr) ((y) << 16 | (x)));
+                    touchDictionary.Clear();
+                }
 
                 e.Handled = true;
 
             } catch {}
+        }
+
+        private void SkCanvasView_PaintSurface(object sender, SkiaSharp.Views.Forms.SKPaintSurfaceEventArgs e)
+        {
+            SkCanvasView_PaintSurface(sender, new SKPaintGLSurfaceEventArgs(e.Surface, null));
         }
 
         private void SkCanvasView_PaintSurface(object sender, SkiaSharp.Views.Forms.SKPaintGLSurfaceEventArgs e) // .SKPaintSurfaceEventArgs // SKPaintGLSurfaceEventArgs
@@ -315,7 +418,7 @@ namespace Xamarin.GCSViews
 
                 var surface = e.Surface;
 
-                e.Surface.Canvas.Clear(SKColors.Transparent);
+                e.Surface.Canvas.Clear(SKColors.Gray);
 
                 surface.Canvas.DrawCircle(0, 0, 50, new SKPaint() {Color = SKColor.Parse("ff0000")});
 
@@ -337,7 +440,7 @@ namespace Xamarin.GCSViews
                     var client_height = 0;
 
 
-                    if (hwnd.hwndbmp != null && hwnd.Mapped && hwnd.Visible)
+                    if (hwnd.hwndbmp != null && hwnd.Mapped && hwnd.Visible && !hwnd.zombie)
                     {
                         // setup clip
                         var parent = hwnd;
@@ -446,8 +549,8 @@ namespace Xamarin.GCSViews
                 {
                     if (form.IsHandleCreated)
                     {
-                        //if (form.MaximizeBox)
-                            //form.WindowState = FormWindowState.Maximized;
+                        if (form is MainV2)
+                            form.WindowState = FormWindowState.Maximized;
 
                         if (form.WindowState == FormWindowState.Maximized)
                         {
@@ -492,6 +595,22 @@ namespace Xamarin.GCSViews
                         if (ctlmenu != null)
                             func(hw.ClientWindow);
                     }
+                }
+
+                {
+                    var path = new SKPath();
+            
+                    path.MoveTo(cursorPoints.First());
+                    cursorPoints.ForEach(a => path.LineTo(a));
+                    path.Transform(new SKMatrix(1, 0, XplatUI.driver.MousePosition.X, 0, 1,
+                        XplatUI.driver.MousePosition.Y, 0, 0, 1));
+
+                    surface.Canvas.DrawPath(path,
+                        new SKPaint()
+                            {Color = SKColors.White, Style = SKPaintStyle.Fill, StrokeJoin = SKStrokeJoin.Miter});
+                    surface.Canvas.DrawPath(path,
+                        new SKPaint()
+                            {Color = SKColors.Black, Style = SKPaintStyle.Stroke, StrokeJoin = SKStrokeJoin.Miter, IsAntialias = true});
                 }
 
                 surface.Canvas.Flush();
@@ -556,5 +675,27 @@ namespace Xamarin.GCSViews
                
             }
         }
+
+        private SKPoint[] cursorPoints = new SKPoint[]
+        {
+            new SKPoint(0f,0f),
+            new SKPoint(0f,16.512804f),
+            new SKPoint(4.205124f,12.717936f),
+            new SKPoint(7.589736f,19.99998f),
+            new SKPoint(9.641016f,19.076904f),
+            new SKPoint(6.256404f,11.79486f),
+            new SKPoint(12.102552f,11.179476f),
+            new SKPoint(0f,0f),
+        };
+    }
+
+    public class TouchInfo
+    {
+        public DateTime DownTime = DateTime.MinValue;
+        public SKTouchEventArgs atdown;
+        public SKTouchEventArgs prev;
+        public SKTouchEventArgs now;
+        public bool hasmoved = false;
+        public bool wasright = false;
     }
 }
