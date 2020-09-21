@@ -523,7 +523,7 @@ namespace Xamarin.GCSViews
                 {
                     if (form.IsHandleCreated)
                     {
-                        if (form is MainV2)
+                        if (form is MainV2 && form.WindowState != FormWindowState.Maximized)
                             form.WindowState = FormWindowState.Maximized;
 
                         if (form.WindowState == FormWindowState.Maximized)
