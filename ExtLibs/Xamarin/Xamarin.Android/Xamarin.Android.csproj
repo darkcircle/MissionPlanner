@@ -57,7 +57,7 @@
     <AndroidSigningKeyPass>dontcare</AndroidSigningKeyPass>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
+    <DebugSymbols>false</DebugSymbols>
     <DebugType>pdbonly</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Release</OutputPath>
@@ -79,6 +79,7 @@
     <AndroidSigningStorePass>dontcare</AndroidSigningStorePass>
     <AndroidSigningKeyAlias>key</AndroidSigningKeyAlias>
     <AndroidSigningKeyPass>dontcare</AndroidSigningKeyPass>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
