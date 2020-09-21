@@ -1,33 +1,24 @@
 ﻿//extern alias MPLib;
 
+using MissionPlanner;
+using MissionPlanner.Utilities;
+using Newtonsoft.Json;
+using SkiaSharp;
+using SkiaSharp.Views.Forms;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using MissionPlanner;
-using MissionPlanner.Controls;
-using MissionPlanner.GCSViews.ConfigurationView;
-using MissionPlanner.Utilities;
-using Newtonsoft.Json;
-using OpenTK.Graphics.ES20;
-using SkiaSharp;
-using SkiaSharp.Views.Forms;
-using Xamarin.Controls;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 using Application = System.Windows.Forms.Application;
 using Device = Xamarin.Forms.Device;
 using Extensions = MissionPlanner.Utilities.Extensions;
 using Form = System.Windows.Forms.Form;
-using Label = System.Windows.Forms.Label;
 using Point = System.Drawing.Point;
 using Rectangle = System.Drawing.Rectangle;
-using Size = Xamarin.Forms.Size;
-using View = Xamarin.Forms.View;
 
 namespace Xamarin.GCSViews
 {
@@ -67,26 +58,6 @@ namespace Xamarin.GCSViews
                 var current = Control.FromHandle(_focusWindow).Text;
 
                 Console.WriteLine("TextChanged {0} {1} {2}", current, e.OldTextValue, e.NewTextValue);
-
-      
-
-                return;
-
-                if (e.OldTextValue == null)
-                {
-                    XplatUI.driver.SendMessage(_focusWindow, Msg.WM_CHAR,
-                        (IntPtr) e.NewTextValue[e.NewTextValue.Length-1], (IntPtr) 0);
-                } 
-                else if (e.OldTextValue.Length > e.NewTextValue.Length)
-                {
-                    XplatUI.driver.SendMessage(_focusWindow, Msg.WM_CHAR, (IntPtr) 8, (IntPtr) 0);
-                }
-                else if (e.OldTextValue.Length < e.NewTextValue.Length)
-                {
-                    XplatUI.driver.SendMessage(_focusWindow, Msg.WM_CHAR,
-                        (IntPtr) e.NewTextValue[e.NewTextValue.Length-1], (IntPtr) 0);
-                }
-
             }
 
             public void FocusOut(IntPtr focusWindow)
@@ -253,7 +224,9 @@ namespace Xamarin.GCSViews
                 {
                     if (touchDictionary.ContainsKey(e.Id))
                     {
-                        touchDictionary[e.Id].hasmoved = true;
+                        if (Math.Abs(touchDictionary[e.Id].atdown.Location.X - e.Location.X) < 20 &&
+                            Math.Abs(touchDictionary[e.Id].atdown.Location.Y - e.Location.Y) < 20)
+                            touchDictionary[e.Id].hasmoved = true;
                         touchDictionary[e.Id].prev = touchDictionary[e.Id].now;
                         touchDictionary[e.Id].now = e;
                     }
@@ -326,13 +299,14 @@ namespace Xamarin.GCSViews
 
                 if (e.ActionType == SKTouchAction.Pressed && e.MouseButton == SKMouseButton.Left)
                 {
-                    touchDictionary.Add(e.Id, new TouchInfo() {now = e, prev = e, DownTime = DateTime.Now, atdown = e});
+                    var now = DateTime.Now;
+                    touchDictionary.Add(e.Id, new TouchInfo() {now = e, prev = e, DownTime = now, atdown = e});
 
                     // right click handler
                     Device.StartTimer(TimeSpan.FromMilliseconds(1000), () =>
                     {
                         if(touchDictionary.ContainsKey(e.Id) && touchDictionary.Count == 1)
-                            if (!touchDictionary[e.Id].hasmoved)
+                            if (!touchDictionary[e.Id].hasmoved && touchDictionary[e.Id].DownTime == now)
                             {
                                 touchDictionary[e.Id].wasright = true;
                                 XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_RBUTTONDOWN,
@@ -598,6 +572,10 @@ namespace Xamarin.GCSViews
                 }
 
                 {
+                    surface.Canvas.ClipRect(
+                        SKRect.Create(0, 0, Screen.PrimaryScreen.Bounds.Width,
+                            Screen.PrimaryScreen.Bounds.Height), (SKClipOperation) 5);
+
                     var path = new SKPath();
             
                     path.MoveTo(cursorPoints.First());
