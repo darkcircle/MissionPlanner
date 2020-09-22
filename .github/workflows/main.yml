@@ -14,4 +14,4 @@ jobs:
           submodules: true
 
       - name: Build
-        run: msbuild /p:Configuration="AppStore" /p:Platform="iPhone" /p:IpaPackageDir=bin/iPhone/AppStore /p:BuildIpa=true "ExtLibs/Xamarin/Xamarin.iOS/Xamarin.iOS.csproj"
+        run: msbuild -v:m -restore /p:Configuration="AppStore" /p:Platform="iPhone" /p:IpaPackageDir=bin/iPhone/AppStore /p:BuildIpa=true "ExtLibs/Xamarin/Xamarin.iOS/Xamarin.iOS.csproj"
