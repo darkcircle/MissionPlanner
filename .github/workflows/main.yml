@@ -78,17 +78,6 @@ jobs:
           name: com.michaeloborne.MissionPlanner.apk.zip
           path: ExtLibs\Xamarin\Xamarin.Android\bin\Release\*.apk
           
-  buildLibosx:
-    name: Build Release Lib1
-    runs-on: macOS-latest
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-
-      - name: Build
-        run: vstool build -t:Build -c:"Release|iPhone" "ExtLibs\Xamarin\Xamarin.iOS\Xamarin.iOS.csproj"
 
 
   buildLibosx2:
@@ -101,4 +90,4 @@ jobs:
           submodules: true
 
       - name: Build
-        run: msbuild /p:Configuration="AppStore" /p:Platform="iPhone" /p:IpaPackageDir=bin/iPhone/AppStore /p:BuildIpa=true /target:"ExtLibs\Xamarin\Xamarin.iOS\Xamarin.iOS.csproj"
+        run: msbuild /p:Configuration="AppStore" /p:Platform="iPhone" /p:IpaPackageDir=bin/iPhone/AppStore /p:BuildIpa=true "ExtLibs/Xamarin/Xamarin.iOS/Xamarin.iOS.csproj"
