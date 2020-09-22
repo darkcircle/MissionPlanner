@@ -32,6 +32,14 @@ namespace Xamarin.GCSViews
         
         protected override void OnAppearing()
         {
+            if (!start)
+            {
+                StartThreads();
+
+                XplatUIMine.GetInstance().Keyboard = new Keyboard(Entry);
+                start = true;
+            }
+
             base.OnAppearing();
         }
         public class Keyboard: KeyboardXplat
@@ -159,7 +167,7 @@ namespace Xamarin.GCSViews
             XplatUIMine.GetInstance()._virtualScreen = new Rectangle(0, 0, (int) size.Width, (int) size.Height);
             XplatUIMine.GetInstance()._workingArea = new Rectangle(0, 0, (int) size.Width, (int) size.Height);
 
-            new Thread(() =>
+            winforms = new Thread(() =>
             {
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
@@ -167,7 +175,8 @@ namespace Xamarin.GCSViews
 
                 MissionPlanner.Program.Main(new string[0]);
              
-            }).Start();
+            });
+            winforms.Start();
 
             Forms.Device.StartTimer(TimeSpan.FromMilliseconds(1000/30), () =>
             {
@@ -395,14 +404,6 @@ namespace Xamarin.GCSViews
 
         private void SkCanvasView_PaintSurface(object sender, SkiaSharp.Views.Forms.SKPaintGLSurfaceEventArgs e) // .SKPaintSurfaceEventArgs // SKPaintGLSurfaceEventArgs
         {
-            if (!start)
-            {
-                StartThreads();
-
-                XplatUIMine.GetInstance().Keyboard = new Keyboard(Entry);
-                start = true;
-            }
-
             try
             {
 
@@ -681,6 +682,8 @@ namespace Xamarin.GCSViews
             new SKPoint(12.102552f,11.179476f),
             new SKPoint(0f,0f),
         };
+
+        static private Thread winforms;
     }
 
     public class TouchInfo
