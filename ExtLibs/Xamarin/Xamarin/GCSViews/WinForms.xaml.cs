@@ -145,7 +145,6 @@ namespace Xamarin.GCSViews
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
-            Application.Exit();
         }
 
         private void StartThreads()
@@ -208,7 +207,7 @@ namespace Xamarin.GCSViews
         private Forms.Size size;
         private Forms.Size scale;
         private Dictionary<long, TouchInfo> touchDictionary = new Dictionary<long, TouchInfo>(10);
-        private bool start;
+        static bool start;
 
         private void SkCanvasView_Touch(object sender, SkiaSharp.Views.Forms.SKTouchEventArgs e)
         {
@@ -224,9 +223,13 @@ namespace Xamarin.GCSViews
                 {
                     if (touchDictionary.ContainsKey(e.Id))
                     {
-                        if (Math.Abs(touchDictionary[e.Id].atdown.Location.X - e.Location.X) < 20 &&
-                            Math.Abs(touchDictionary[e.Id].atdown.Location.Y - e.Location.Y) < 20)
+                        if (Math.Abs(touchDictionary[e.Id].atdown.Location.X / scale.Width - x) > 5 &&
+                            Math.Abs(touchDictionary[e.Id].atdown.Location.Y / scale.Height - y) > 5)
+                        {
+                            //Console.WriteLine("Mouse has moved");
                             touchDictionary[e.Id].hasmoved = true;
+                        }
+
                         touchDictionary[e.Id].prev = touchDictionary[e.Id].now;
                         touchDictionary[e.Id].now = e;
                     }
@@ -254,9 +257,9 @@ namespace Xamarin.GCSViews
                         center.Y /= 2;
 
                         // Find angles from pivot point to touch points
-                        float oldAngle = (float)Math.Atan2(oldVector.Y, oldVector.X);
-                        float newAngle = (float)Math.Atan2(newVector.Y, newVector.X);
-                        
+                        float oldAngle = (float) Math.Atan2(oldVector.Y, oldVector.X);
+                        float newAngle = (float) Math.Atan2(newVector.Y, newVector.X);
+
                         float scale1 = Magnitude(newVector) / Magnitude(oldVector);
 
                         if (!float.IsNaN(scale1) && !float.IsInfinity(scale1))
@@ -268,14 +271,16 @@ namespace Xamarin.GCSViews
                             Console.WriteLine("scale: {0} {1} {2}", scale, newVector.Length, oldVector.Length);
                             if (scale1 >= 2)
                             {
-                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEWHEEL, new IntPtr((int) (1) << 16),
+                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEWHEEL,
+                                    new IntPtr((int) (1) << 16),
                                     (IntPtr) ((y) << 16 | (x)));
                                 touchDictionary[e.Id].atdown = e;
                             }
 
                             if (scale1 <= 0.5)
                             {
-                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEWHEEL, new IntPtr((int) (-1) << 16),
+                                XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEWHEEL,
+                                    new IntPtr((int) (-1) << 16),
                                     (IntPtr) ((y) << 16 | (x)));
                                 touchDictionary[e.Id].atdown = e;
                             }
@@ -287,7 +292,8 @@ namespace Xamarin.GCSViews
 
                     if (e.InContact)
                     {
-                        XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr((int) MsgButtons.MK_LBUTTON),
+                        XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE,
+                            new IntPtr((int) MsgButtons.MK_LBUTTON),
                             (IntPtr) ((y) << 16 | (x)));
                     }
                     else
@@ -295,6 +301,7 @@ namespace Xamarin.GCSViews
                         XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_MOUSEMOVE, new IntPtr(),
                             (IntPtr) ((y) << 16 | (x)));
                     }
+
                 }
 
                 if (e.ActionType == SKTouchAction.Pressed && e.MouseButton == SKMouseButton.Left)
@@ -305,6 +312,12 @@ namespace Xamarin.GCSViews
                     // right click handler
                     Device.StartTimer(TimeSpan.FromMilliseconds(1000), () =>
                     {
+                        /*
+                         Console.WriteLine("Mouse rightclick check true={0} 1={1} {2} {3} {4}",                         
+                            touchDictionary.ContainsKey(e.Id),
+                            touchDictionary.Count, 
+                            touchDictionary.ContainsKey(e.Id) ? touchDictionary[e.Id] : null, now, DateTime.Now);
+                        */
                         if(touchDictionary.ContainsKey(e.Id) && touchDictionary.Count == 1)
                             if (!touchDictionary[e.Id].hasmoved && touchDictionary[e.Id].DownTime == now)
                             {
@@ -313,6 +326,7 @@ namespace Xamarin.GCSViews
                                     new IntPtr((int) MsgButtons.MK_RBUTTON), (IntPtr) ((y) << 16 | (x)));
                                 XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_RBUTTONUP,
                                     new IntPtr((int) MsgButtons.MK_RBUTTON), (IntPtr) ((y) << 16 | (x)));
+                                touchDictionary.Remove(e.Id);
                                 return false;
                             }
                         return false;
@@ -340,7 +354,9 @@ namespace Xamarin.GCSViews
                     }
                     else
                     {
-                        XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_LBUTTONUP,
+                        // only up if we have seen the down
+                        if(touchDictionary.ContainsKey(e.Id))
+                            XplatUI.driver.SendMessage(IntPtr.Zero, Msg.WM_LBUTTONUP,
                             new IntPtr((int) MsgButtons.MK_LBUTTON), (IntPtr) ((y) << 16 | (x)));
                     }
 
