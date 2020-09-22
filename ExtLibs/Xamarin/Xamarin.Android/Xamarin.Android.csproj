@@ -40,8 +40,8 @@
     </AndroidStoreUncompressedFileExtensions>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <MandroidI18n>West</MandroidI18n>
-    <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
-    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <AndroidUseSharedRuntime>true</AndroidUseSharedRuntime>
+    <EmbedAssembliesIntoApk>false</EmbedAssembliesIntoApk>
     <AndroidUseAapt2>true</AndroidUseAapt2>
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
     <AndroidEnableMultiDex>false</AndroidEnableMultiDex>
@@ -51,10 +51,14 @@
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
     <AndroidKeyStore>false</AndroidKeyStore>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
-    <AndroidSigningKeyStore>C:\Users\michael\Source\Repos\MissionPlanner\ExtLibs\Xamarin\Xamarin.Android\key.keystore</AndroidSigningKeyStore>
-    <AndroidSigningStorePass>dontcare</AndroidSigningStorePass>
-    <AndroidSigningKeyAlias>key</AndroidSigningKeyAlias>
-    <AndroidSigningKeyPass>dontcare</AndroidSigningKeyPass>
+    <AndroidSigningKeyStore>
+    </AndroidSigningKeyStore>
+    <AndroidSigningStorePass>
+    </AndroidSigningStorePass>
+    <AndroidSigningKeyAlias>
+    </AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass>
+    </AndroidSigningKeyPass>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>false</DebugSymbols>
@@ -75,10 +79,14 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidUseAapt2>true</AndroidUseAapt2>
     <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
-    <AndroidSigningKeyStore>C:\Users\michael\Source\Repos\MissionPlanner\ExtLibs\Xamarin\Xamarin.Android\key.keystore</AndroidSigningKeyStore>
-    <AndroidSigningStorePass>dontcare</AndroidSigningStorePass>
-    <AndroidSigningKeyAlias>key</AndroidSigningKeyAlias>
-    <AndroidSigningKeyPass>dontcare</AndroidSigningKeyPass>
+    <AndroidSigningKeyStore>
+    </AndroidSigningKeyStore>
+    <AndroidSigningStorePass>
+    </AndroidSigningStorePass>
+    <AndroidSigningKeyAlias>
+    </AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass>
+    </AndroidSigningKeyPass>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <ItemGroup>
