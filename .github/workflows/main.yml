@@ -14,4 +14,17 @@ jobs:
           submodules: true
 
       - name: Build
-        run: msbuild -v:m -restore /p:Configuration="Ad-Hoc" /p:Platform="iPhone" /p:IpaPackageDir=bin/iPhone/Ad-Hoc /p:BuildIpa=false "ExtLibs/Xamarin/Xamarin.iOS/Xamarin.iOS.csproj"
+        run: msbuild -v:m -restore /p:Configuration="Ad-Hoc" /p:Platform="iPhoneSimulator" /p:IpaPackageDir=bin/iPhoneSimulator/Ad-Hoc /p:BuildIpa=true "ExtLibs/Xamarin/Xamarin.iOS/Xamarin.iOS.csproj"
+
+
+  buildLibosx3:
+    name: Build Release Lib3
+    runs-on: macOS-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Build
+        run: msbuild -v:m -restore /p:Configuration="Debug" /p:Platform="iPhone" /p:IpaPackageDir=bin/iPhone/Debug /p:BuildIpa=true "ExtLibs/Xamarin/Xamarin.iOS/Xamarin.iOS.csproj"
