@@ -93,36 +93,23 @@
     <AndroidEnableMultiDex>true</AndroidEnableMultiDex>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Mono.Android" />
     <Reference Include="Mono.Android.Export" />
+    <Reference Include="Mono.CompilerServices.SymbolWriter" />
+    <Reference Include="Mono.CSharp" />
     <Reference Include="Mono.Posix" />
-    <Reference Include="OpenTK-1.0" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Net" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Font">
-      <Version>0.3.0.3</Version>
-    </PackageReference>
     <PackageReference Include="SkiaSharp.Views">
       <Version>2.80.2</Version>
     </PackageReference>
     <PackageReference Include="SkiaSharp.Views.Forms">
       <Version>2.80.2</Version>
     </PackageReference>
-    <PackageReference Include="System.IO.Ports">
-      <Version>4.7.0</Version>
-    </PackageReference>
     <PackageReference Include="System.Security.Permissions">
       <Version>4.7.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Threading.Tasks.Extensions">
-      <Version>4.5.4</Version>
     </PackageReference>
     <PackageReference Include="Xamarin.Android.Support.Annotations">
       <Version>28.0.0.3</Version>
@@ -130,21 +117,11 @@
     <PackageReference Include="Xamarin.Android.Support.Collections">
       <Version>28.0.0.3</Version>
     </PackageReference>
-    <PackageReference Include="Xamarin.AndroidX.AppCompat.Resources">
-      <Version>1.1.0.1</Version>
-    </PackageReference>
-    <PackageReference Include="Xamarin.AndroidX.MediaRouter">
-      <Version>1.1.0.4</Version>
-    </PackageReference>
-    <PackageReference Include="Xamarin.Firebase.Analytics">
-      <Version>117.2.2</Version>
-    </PackageReference>
     <PackageReference Include="Xamarin.Forms" Version="4.8.0.1451" />
     <PackageReference Include="Xamarin.Android.Support.Design" Version="28.0.0.3" />
     <PackageReference Include="Xamarin.Android.Support.v7.AppCompat" Version="28.0.0.3" />
     <PackageReference Include="Xamarin.Android.Support.v4" Version="28.0.0.3" />
     <PackageReference Include="Xamarin.Android.Support.v7.CardView" Version="28.0.0.3" />
-    <PackageReference Include="Xamarin.Android.Support.v7.MediaRouter" Version="28.0.0.3" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="..\..\..\plugins\generator.cs">
@@ -230,10 +207,6 @@
       <Project>{ca6345d3-7a6d-478b-a0ed-a58e50dcaa83}</Project>
       <Name>MissionPlanner.ArduPilot</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Comms\MissionPlanner.Comms.csproj">
-      <Project>{825E7A10-390C-4A2B-B3A8-491D14966912}</Project>
-      <Name>MissionPlanner.Comms</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\GMap.NET.Core\GMap.NET.Core.csproj">
       <Project>{d0c39d9d-bed0-418b-9a5e-713176caf40c}</Project>
       <Name>GMap.NET.Core</Name>
@@ -242,14 +215,6 @@
       <Project>{fd4d2994-9bea-41a1-8c51-2e02d1e8503e}</Project>
       <Name>Interfaces</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\MissionPlanner.Drawing\MissionPlanner.Drawing.csproj">
-      <Project>{6974d22c-ede6-4bb2-aad2-ff23ed6ec165}</Project>
-      <Name>MissionPlanner.Drawing</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Drawing.android\System.Drawing.android.csproj">
-      <Project>{958c175e-8e11-4872-b99b-648f72afd3c1}</Project>
-      <Name>System.Drawing.android</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\UsbSerialForAndroid\UsbSerialForAndroid.csproj">
       <Project>{B57854C8-5C63-4D79-96ED-ACD31815CB91}</Project>
       <Name>UsbSerialForAndroid</Name>
@@ -257,10 +222,6 @@
     <ProjectReference Include="..\..\Utilities\MissionPlanner.Utilities.csproj">
       <Project>{1378a66c-38e4-46f5-a05f-dc04ef7d4d16}</Project>
       <Name>MissionPlanner.Utilities</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GDALForAndroid\GDALForAndroid.csproj">
-      <Project>{e1d67c23-0cdd-4835-a1e2-4634c0dd4c34}</Project>
-      <Name>GDALForAndroid</Name>
     </ProjectReference>
     <ProjectReference Include="..\GDAL\GDALMPAndroid.csproj">
       <Project>{6a3ba3a7-7d66-4292-90db-05e6a765127a}</Project>
